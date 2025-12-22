@@ -1,6 +1,6 @@
 // =====================================================
-// TANKS ARENA - Main Application
-// Initializes and connects all components
+// TANKS ARENA - Main Application v2.0
+// Improved state management and game logic
 // =====================================================
 
 // Global instances
@@ -12,6 +12,7 @@ let ui = null;
 let myPlayer = null;
 let currentRoom = null;
 let allPlayers = [];
+let isMyTurn = false;
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,11 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup UI event listeners
     setupUIEvents();
+
+    console.log('Tanks Arena initialized');
 });
 
 function setupNetworkCallbacks() {
     network.onConnect = () => {
         ui.updateServerStatus(true, 0);
+        console.log('Connected to server');
     };
 
     network.onDisconnect = () => {
@@ -69,55 +73,71 @@ function setupNetworkCallbacks() {
 
     network.onPlayerJoined = (data) => {
         allPlayers = data.players;
+        if (currentRoom) {
+            currentRoom.players = data.players;
+        }
         ui.updateWaitingRoom(currentRoom, allPlayers, network.isAdmin);
     };
 
     network.onPlayerLeft = (data) => {
         allPlayers = data.players;
         if (currentRoom) {
+            currentRoom.players = data.players;
             currentRoom.adminId = data.newAdmin;
         }
         ui.updateWaitingRoom(currentRoom, allPlayers, network.isAdmin);
     };
 
     network.onGameStarted = (data) => {
-        // Initialize game canvas
-        const canvas = document.getElementById('game-canvas');
-        game = new TanksGame(canvas);
-        game.myPlayerId = network.playerId;
+        startGame(data);
+    };
 
-        // Set terrain and players
-        game.setTerrain(data.terrain, currentRoom.terrain);
-        game.setPlayers(data.players);
-        game.currentTurn = data.currentTurn;
-        game.wind = data.wind;
+    network.onRoundStarted = (data) => {
+        // Hide market overlay
+        ui.hideOverlay('market');
+        ui.readyBtn.disabled = false;
+        ui.readyBtn.innerHTML = '<span>✅ Hazırım!</span>';
 
+        // Update room state
+        if (currentRoom) {
+            currentRoom.round = data.round;
+        }
+
+        // Reinitialize game state
+        if (game) {
+            game.setTerrain(data.terrain, currentRoom.terrain);
+            game.setPlayers(data.players);
+            game.currentTurn = data.currentTurn;
+            game.wind = data.wind;
+            game.round = data.round;
+        }
+
+        // Update local state
         allPlayers = data.players;
         myPlayer = allPlayers.find(p => p.id === network.playerId);
 
-        // Show game screen
-        ui.showScreen('game');
+        // Update UI
+        updateGameUI(data);
 
-        // Start rendering
-        setTimeout(() => {
-            game.resize();
-            game.start();
-
-            // Update HUD
-            updateGameUI(data);
-        }, 100);
+        console.log('Round started:', data.round);
     };
 
     network.onPlayerMoved = (data) => {
+        // Update player in array
         const player = allPlayers.find(p => p.id === data.playerId);
         if (player) {
             player.x = data.x;
             player.y = data.y;
             player.fuel = data.fuel;
+        }
+
+        // Update game visualization
+        if (game) {
             game.updatePlayer(data.playerId, { x: data.x, y: data.y });
         }
 
-        if (data.playerId === network.playerId) {
+        // Update HUD if it's our player
+        if (data.playerId === network.playerId && myPlayer) {
             myPlayer.fuel = data.fuel;
             ui.updateHUD(myPlayer);
         }
@@ -128,6 +148,9 @@ function setupNetworkCallbacks() {
         if (player) {
             player.angle = data.angle;
             player.power = data.power;
+        }
+
+        if (game) {
             game.updatePlayer(data.playerId, { angle: data.angle, power: data.power });
         }
     };
@@ -140,22 +163,37 @@ function setupNetworkCallbacks() {
     };
 
     network.onProjectileFired = (data) => {
-        game.fireProjectile(data);
+        if (game) {
+            game.fireProjectile(data);
+        }
+
+        // Disable controls during projectile flight
+        isMyTurn = false;
+        ui.enableControls(false);
     };
 
     network.onExplosion = (data) => {
-        game.createExplosion(data.x, data.y, data.radius, data.weapon);
+        if (game) {
+            game.createExplosion(data.x, data.y, data.radius, data.weapon);
+        }
 
-        // Update player health
+        // Update player health from hits
         data.hits.forEach(hit => {
             const player = allPlayers.find(p => p.id === hit.playerId);
             if (player) {
                 player.health = hit.health;
                 player.isAlive = hit.isAlive;
-                game.updatePlayer(hit.playerId, { health: hit.health, isAlive: hit.isAlive });
             }
 
-            if (hit.playerId === network.playerId) {
+            if (game) {
+                game.updatePlayer(hit.playerId, {
+                    health: hit.health,
+                    isAlive: hit.isAlive
+                });
+            }
+
+            // Update our HUD
+            if (hit.playerId === network.playerId && myPlayer) {
                 myPlayer.health = hit.health;
                 myPlayer.isAlive = hit.isAlive;
                 ui.updateHUD(myPlayer);
@@ -165,65 +203,126 @@ function setupNetworkCallbacks() {
 
     network.onPlayerEliminated = (data) => {
         ui.showElimination(data.playerName);
+        console.log('Player eliminated:', data.playerName);
     };
 
     network.onTurnChanged = (data) => {
-        game.currentTurn = data.currentTurn;
-        game.wind = data.wind;
+        if (game) {
+            game.currentTurn = data.currentTurn;
+            game.wind = data.wind;
+        }
 
-        // Update current player fuel
+        // Update current player's fuel
         const currentPlayer = allPlayers.find(p => p.id === data.playerId);
         if (currentPlayer) {
             currentPlayer.fuel = currentPlayer.maxFuel;
-            game.updatePlayer(data.playerId, { fuel: currentPlayer.maxFuel });
+            if (game) {
+                game.updatePlayer(data.playerId, { fuel: currentPlayer.maxFuel });
+            }
         }
 
-        const isMyTurn = data.playerId === network.playerId;
-        const currentPlayerObj = allPlayers.find(p => p.id === data.playerId);
-        ui.updateTurn(isMyTurn, currentPlayerObj?.name || 'Oyuncu', data.wind, currentRoom.round || 1);
+        // Check if it's our turn
+        isMyTurn = data.playerId === network.playerId;
 
-        if (isMyTurn) {
+        // Update UI
+        ui.updateTurn(isMyTurn, data.playerName || currentPlayer?.name || 'Oyuncu', data.wind, currentRoom?.round || 1);
+        ui.enableControls(isMyTurn);
+
+        // Reset our fuel display if it's our turn
+        if (isMyTurn && myPlayer) {
             myPlayer.fuel = myPlayer.maxFuel;
             ui.updateHUD(myPlayer);
         }
+
+        console.log('Turn changed to:', data.playerName, 'isMyTurn:', isMyTurn);
     };
 
     network.onRoundEnded = (data) => {
-        // Update all players
+        console.log('Round ended. Winner:', data.winner?.name);
+
+        // Update all players with new money
         allPlayers = data.players;
         myPlayer = allPlayers.find(p => p.id === network.playerId);
 
         // Show market
-        ui.updateMarket(myPlayer);
+        if (myPlayer) {
+            ui.updateMarket(myPlayer);
+            ui.updateHUD(myPlayer);
+        }
+
         ui.showOverlay('market');
     };
 
-    network.onRoundStarted = (data) => {
-        // Hide market
-        ui.hideOverlay('market');
-
-        // Update game state
-        game.setTerrain(data.terrain, currentRoom.terrain);
-        game.setPlayers(data.players);
-        game.currentTurn = data.currentTurn;
-        game.wind = data.wind;
-        currentRoom.round = data.round;
-
-        allPlayers = data.players;
-        myPlayer = allPlayers.find(p => p.id === network.playerId);
-
-        updateGameUI(data);
+    network.onPlayerReady = (data) => {
+        console.log('Player ready:', data.playerName);
     };
 
     network.onPurchaseSuccess = (data) => {
-        myPlayer = data.player;
+        // Update our player
+        Object.assign(myPlayer, data.player);
         ui.updateMarket(myPlayer);
         ui.updateHUD(myPlayer);
+        console.log('Purchase successful:', data.itemId);
     };
 
     network.onError = (data) => {
         ui.showError(data.message);
     };
+}
+
+function startGame(data) {
+    console.log('Game starting with data:', data);
+
+    // Initialize game canvas
+    const canvas = document.getElementById('game-canvas');
+    game = new TanksGame(canvas);
+    game.myPlayerId = network.playerId;
+
+    // Set terrain and players
+    game.setTerrain(data.terrain, currentRoom.terrain);
+    game.setPlayers(data.players);
+    game.currentTurn = data.currentTurn;
+    game.wind = data.wind;
+    game.round = data.round || 1;
+
+    allPlayers = data.players;
+    myPlayer = allPlayers.find(p => p.id === network.playerId);
+
+    // Show game screen
+    ui.showScreen('game');
+
+    // Start rendering after a short delay to ensure DOM is ready
+    setTimeout(() => {
+        game.resize();
+        game.start();
+
+        // Update HUD
+        updateGameUI(data);
+
+        console.log('Game started and rendering');
+    }, 100);
+}
+
+function updateGameUI(data) {
+    // Find current player
+    const currentPlayerIndex = data.currentTurn;
+    const currentPlayer = allPlayers[currentPlayerIndex];
+
+    // Check if it's our turn
+    isMyTurn = currentPlayer?.id === network.playerId;
+
+    ui.updateTurn(isMyTurn, currentPlayer?.name || 'Oyuncu', data.wind, data.round || currentRoom?.round || 1);
+    ui.enableControls(isMyTurn);
+
+    if (myPlayer) {
+        ui.updateHUD(myPlayer);
+
+        // Set initial angle/power from player data
+        ui.angleSlider.value = myPlayer.angle || 45;
+        ui.angleValue.textContent = myPlayer.angle || 45;
+        ui.powerSlider.value = myPlayer.power || 50;
+        ui.powerValue.textContent = myPlayer.power || 50;
+    }
 }
 
 function setupUIEvents() {
@@ -263,28 +362,18 @@ function setupUIEvents() {
 
     // Leave room button
     ui.leaveRoomBtn.addEventListener('click', () => {
-        network.leaveRoom();
-        ui.showScreen('lobby');
-        currentRoom = null;
-        myPlayer = null;
-        allPlayers = [];
+        leaveGame();
     });
 
-    // Move buttons
-    ui.moveLeftBtn.addEventListener('click', () => {
-        network.move(-1);
-    });
-
-    ui.moveRightBtn.addEventListener('click', () => {
-        network.move(1);
-    });
-
-    // Touch hold for movement
+    // Movement buttons with touch hold support
     let moveInterval = null;
 
     const startMove = (direction) => {
+        if (!isMyTurn) return;
         network.move(direction);
-        moveInterval = setInterval(() => network.move(direction), 100);
+        moveInterval = setInterval(() => {
+            if (isMyTurn) network.move(direction);
+        }, 80);
     };
 
     const stopMove = () => {
@@ -294,6 +383,11 @@ function setupUIEvents() {
         }
     };
 
+    // Mouse events
+    ui.moveLeftBtn.addEventListener('mousedown', () => startMove(-1));
+    ui.moveRightBtn.addEventListener('mousedown', () => startMove(1));
+
+    // Touch events
     ui.moveLeftBtn.addEventListener('touchstart', (e) => {
         e.preventDefault();
         startMove(-1);
@@ -304,35 +398,60 @@ function setupUIEvents() {
         startMove(1);
     });
 
-    ['touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(event => {
+    // Stop events
+    ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(event => {
         ui.moveLeftBtn.addEventListener(event, stopMove);
         ui.moveRightBtn.addEventListener(event, stopMove);
     });
 
     // Fire button
     ui.fireBtn.addEventListener('click', () => {
-        // Send aim first
+        if (!isMyTurn) return;
+
+        // Send aim first, then fire
         network.aim(ui.getAngle(), ui.getPower());
-        // Then fire
-        setTimeout(() => network.fire(), 50);
+        setTimeout(() => {
+            network.fire();
+        }, 100);
     });
 
     // Angle/Power sliders
-    ui.angleSlider.addEventListener('change', () => {
-        network.aim(ui.getAngle(), ui.getPower());
+    let aimTimeout = null;
+
+    const sendAim = () => {
+        if (!isMyTurn) return;
+        clearTimeout(aimTimeout);
+        aimTimeout = setTimeout(() => {
+            network.aim(ui.getAngle(), ui.getPower());
+        }, 100);
+    };
+
+    ui.angleSlider.addEventListener('input', () => {
+        ui.angleValue.textContent = ui.angleSlider.value;
+
+        // Update local player angle for real-time visualization
+        if (myPlayer && game) {
+            myPlayer.angle = parseInt(ui.angleSlider.value);
+            game.updatePlayer(network.playerId, { angle: myPlayer.angle });
+        }
+
+        sendAim();
     });
 
-    ui.powerSlider.addEventListener('change', () => {
-        network.aim(ui.getAngle(), ui.getPower());
+    ui.powerSlider.addEventListener('input', () => {
+        ui.powerValue.textContent = ui.powerSlider.value;
+        sendAim();
     });
 
     // Weapon selection
     document.querySelectorAll('.weapon-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (btn.disabled) return;
+            if (btn.disabled || !isMyTurn) return;
+
             const weapon = btn.dataset.weapon;
             network.selectWeapon(weapon);
 
+            // Update UI
             document.querySelectorAll('.weapon-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         });
@@ -351,76 +470,113 @@ function setupUIEvents() {
     ui.readyBtn.addEventListener('click', () => {
         network.ready();
         ui.readyBtn.disabled = true;
-        ui.readyBtn.textContent = '⏳ Bekleniyor...';
+        ui.readyBtn.innerHTML = '<span>⏳ Bekleniyor...</span>';
     });
 
     // Back to lobby button
     ui.backToLobbyBtn.addEventListener('click', () => {
-        network.leaveRoom();
-        ui.hideOverlay('victory');
-        ui.showScreen('lobby');
-
-        if (game) {
-            game.stop();
-            game = null;
-        }
-
-        currentRoom = null;
-        myPlayer = null;
-        allPlayers = [];
+        leaveGame();
     });
 
     // Keyboard controls
     document.addEventListener('keydown', (e) => {
-        if (!game || !myPlayer) return;
-
-        const currentPlayer = allPlayers[game.currentTurn];
-        if (currentPlayer?.id !== network.playerId) return;
+        if (!game || !myPlayer || !isMyTurn) return;
 
         switch (e.key) {
             case 'ArrowLeft':
             case 'a':
             case 'A':
+                e.preventDefault();
                 network.move(-1);
                 break;
             case 'ArrowRight':
             case 'd':
             case 'D':
+                e.preventDefault();
                 network.move(1);
                 break;
             case 'ArrowUp':
             case 'w':
             case 'W':
+                e.preventDefault();
                 ui.angleSlider.value = Math.min(180, parseInt(ui.angleSlider.value) + 2);
                 ui.angleValue.textContent = ui.angleSlider.value;
+                if (myPlayer) {
+                    myPlayer.angle = parseInt(ui.angleSlider.value);
+                    game.updatePlayer(network.playerId, { angle: myPlayer.angle });
+                }
+                sendAim();
                 break;
             case 'ArrowDown':
             case 's':
             case 'S':
+                e.preventDefault();
                 ui.angleSlider.value = Math.max(0, parseInt(ui.angleSlider.value) - 2);
                 ui.angleValue.textContent = ui.angleSlider.value;
+                if (myPlayer) {
+                    myPlayer.angle = parseInt(ui.angleSlider.value);
+                    game.updatePlayer(network.playerId, { angle: myPlayer.angle });
+                }
+                sendAim();
                 break;
             case ' ':
                 e.preventDefault();
                 network.aim(ui.getAngle(), ui.getPower());
-                setTimeout(() => network.fire(), 50);
+                setTimeout(() => network.fire(), 100);
                 break;
+            case '1':
+                network.selectWeapon('normal');
+                break;
+            case '2':
+                network.selectWeapon('triple');
+                break;
+            case '3':
+                network.selectWeapon('atom');
+                break;
+            case '4':
+                network.selectWeapon('napalm');
+                break;
+        }
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        if (game) {
+            game.resize();
+        }
+    });
+
+    // Prevent context menu on long press (mobile)
+    document.addEventListener('contextmenu', (e) => {
+        if (e.target.closest('#controls-panel') || e.target.closest('.weapon-panel')) {
+            e.preventDefault();
         }
     });
 }
 
-function updateGameUI(data) {
-    const isMyTurn = allPlayers[data.currentTurn]?.id === network.playerId;
-    const currentPlayer = allPlayers[data.currentTurn];
+function leaveGame() {
+    network.leaveRoom();
+    ui.hideOverlay('market');
+    ui.hideOverlay('victory');
+    ui.showScreen('lobby');
 
-    ui.updateTurn(isMyTurn, currentPlayer?.name || 'Oyuncu', data.wind, data.round || 1);
-    ui.updateHUD(myPlayer);
-
-    // Set initial angle/power from player
-    if (myPlayer) {
-        ui.angleSlider.value = myPlayer.angle || 45;
-        ui.angleValue.textContent = myPlayer.angle || 45;
-        ui.powerSlider.value = myPlayer.power || 50;
-        ui.powerValue.textContent = myPlayer.power || 50;
+    if (game) {
+        game.stop();
+        game = null;
     }
+
+    currentRoom = null;
+    myPlayer = null;
+    allPlayers = [];
+    isMyTurn = false;
 }
+
+// Handle page visibility change
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && game) {
+        // Page is hidden, could pause render loop
+    } else if (!document.hidden && game) {
+        // Page is visible again
+        game.resize();
+    }
+});
