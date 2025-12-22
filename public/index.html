@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎮 Tanks Arena - Multiplayer</title>
+    <meta name="description" content="Classic turn-based tanks game with multiplayer support">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Main Container -->
+    <div id="app">
+        <!-- Server Status Bar -->
+        <div id="status-bar">
+            <div class="logo">
+                <span class="logo-icon">🎮</span>
+                <span class="logo-text">TANKS ARENA</span>
+            </div>
+            <div class="server-status">
+                <span class="status-dot"></span>
+                <span id="server-status-text">Bağlanıyor...</span>
+                <span id="player-count">(0 oyuncu)</span>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="screen active">
+            <div class="lobby-container">
+                <!-- Player Name Input -->
+                <div class="card player-card">
+                    <h2>👤 Oyuncu Adı</h2>
+                    <input type="text" id="player-name" placeholder="Adını gir..." maxlength="15">
+                </div>
+
+                <!-- Room Actions -->
+                <div class="room-actions">
+                    <!-- Create Room -->
+                    <div class="card create-room-card">
+                        <h2>🏠 Oda Oluştur</h2>
+                        <input type="text" id="room-name" placeholder="Oda adı..." maxlength="20">
+                        
+                        <div class="terrain-select">
+                            <label>Harita Seç:</label>
+                            <div class="terrain-options">
+                                <button class="terrain-btn active" data-terrain="desert">🏜️ Çöl</button>
+                                <button class="terrain-btn" data-terrain="jungle">🌴 Orman</button>
+                                <button class="terrain-btn" data-terrain="mountain">⛰️ Dağ</button>
+                                <button class="terrain-btn" data-terrain="snow">❄️ Kar</button>
+                            </div>
+                        </div>
+                        
+                        <div class="player-count-select">
+                            <label>Oyuncu Sayısı:</label>
+                            <div class="count-options">
+                                <button class="count-btn active" data-count="2">2</button>
+                                <button class="count-btn" data-count="3">3</button>
+                                <button class="count-btn" data-count="4">4</button>
+                            </div>
+                        </div>
+                        
+                        <button id="create-room-btn" class="btn btn-primary">
+                            <span>🚀 Oda Oluştur</span>
+                        </button>
+                    </div>
+
+                    <!-- Room List -->
+                    <div class="card room-list-card">
+                        <h2>📋 Oda Listesi</h2>
+                        <div id="room-list" class="room-list">
+                            <div class="no-rooms">Henüz oda yok...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waiting Room Screen -->
+        <div id="waiting-room-screen" class="screen">
+            <div class="waiting-container">
+                <div class="card waiting-card">
+                    <h2 id="waiting-room-title">🎮 Oda Adı</h2>
+                    <div class="waiting-info">
+                        <span id="waiting-terrain">🏜️ Çöl</span>
+                        <span id="waiting-round">Round 1</span>
+                    </div>
+                    
+                    <div id="players-list" class="players-list">
+                        <!-- Players will be added here -->
+                    </div>
+                    
+                    <div class="waiting-actions">
+                        <button id="start-game-btn" class="btn btn-success" style="display: none;">
+                            <span>▶️ Oyunu Başlat</span>
+                        </button>
+                        <button id="leave-room-btn" class="btn btn-danger">
+                            <span>🚪 Ayrıl</span>
+                        </button>
+                    </div>
+                    
+                    <div class="waiting-message">
+                        <span id="waiting-status">Oyuncular bekleniyor...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <!-- Game HUD -->
+            <div id="game-hud">
+                <div class="hud-left">
+                    <div class="hud-item health">
+                        <span class="hud-icon">❤️</span>
+                        <div class="hud-bar">
+                            <div id="health-bar" class="bar-fill health-fill"></div>
+                        </div>
+                        <span id="health-text">100</span>
+                    </div>
+                    <div class="hud-item fuel">
+                        <span class="hud-icon">⛽</span>
+                        <div class="hud-bar">
+                            <div id="fuel-bar" class="bar-fill fuel-fill"></div>
+                        </div>
+                        <span id="fuel-text">50</span>
+                    </div>
+                </div>
+                
+                <div class="hud-center">
+                    <div id="turn-indicator" class="turn-indicator">
+                        <span id="turn-text">Senin Sıran!</span>
+                    </div>
+                    <div class="wind-indicator">
+                        <span>💨 Rüzgar:</span>
+                        <span id="wind-value">0</span>
+                    </div>
+                </div>
+                
+                <div class="hud-right">
+                    <div class="hud-item money">
+                        <span class="hud-icon">💰</span>
+                        <span id="money-text">0</span>
+                    </div>
+                    <div class="hud-item round">
+                        <span class="hud-icon">🏆</span>
+                        <span id="round-text">Round 1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Canvas -->
+            <canvas id="game-canvas"></canvas>
+
+            <!-- Weapon Selection -->
+            <div id="weapon-panel" class="weapon-panel">
+                <button class="weapon-btn active" data-weapon="normal" title="Normal Shot">
+                    <span class="weapon-icon">💣</span>
+                    <span class="weapon-count">∞</span>
+                </button>
+                <button class="weapon-btn" data-weapon="triple" title="Triple Shot">
+                    <span class="weapon-icon">🎯</span>
+                    <span class="weapon-count" id="triple-count">0</span>
+                </button>
+                <button class="weapon-btn" data-weapon="atom" title="Atom Bomb">
+                    <span class="weapon-icon">☢️</span>
+                    <span class="weapon-count" id="atom-count">0</span>
+                </button>
+                <button class="weapon-btn" data-weapon="napalm" title="Napalm">
+                    <span class="weapon-icon">🔥</span>
+                    <span class="weapon-count" id="napalm-count">0</span>
+                </button>
+            </div>
+
+            <!-- Controls Panel -->
+            <div id="controls-panel">
+                <div class="control-group">
+                    <label>🎯 Açı: <span id="angle-value">45</span>°</label>
+                    <input type="range" id="angle-slider" min="0" max="180" value="45">
+                </div>
+                <div class="control-group">
+                    <label>💪 Güç: <span id="power-value">50</span>%</label>
+                    <input type="range" id="power-slider" min="10" max="100" value="50">
+                </div>
+                <div class="control-buttons">
+                    <button id="move-left-btn" class="control-btn">⬅️</button>
+                    <button id="fire-btn" class="btn btn-fire">🔥 ATEŞ!</button>
+                    <button id="move-right-btn" class="control-btn">➡️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market/Shop Screen (Overlay) -->
+        <div id="market-screen" class="overlay">
+            <div class="overlay-content market-content">
+                <h2>🏪 MARKET</h2>
+                <div class="market-header">
+                    <span>💰 Paran: <span id="market-money">0</span></span>
+                </div>
+                
+                <div class="market-sections">
+                    <!-- Weapons Section -->
+                    <div class="market-section">
+                        <h3>🔫 Silahlar</h3>
+                        <div class="market-items">
+                            <div class="market-item" data-type="weapon" data-id="triple">
+                                <span class="item-icon">🎯</span>
+                                <div class="item-info">
+                                    <span class="item-name">Triple Shot</span>
+                                    <span class="item-desc">3 mermi aynı anda</span>
+                                </div>
+                                <span class="item-price">💰 100</span>
+                            </div>
+                            <div class="market-item" data-type="weapon" data-id="atom">
+                                <span class="item-icon">☢️</span>
+                                <div class="item-info">
+                                    <span class="item-name">Atom Bomb</span>
+                                    <span class="item-desc">Yüksek hasar, geniş alan</span>
+                                </div>
+                                <span class="item-price">💰 300</span>
+                            </div>
+                            <div class="market-item" data-type="weapon" data-id="napalm">
+                                <span class="item-icon">🔥</span>
+                                <div class="item-info">
+                                    <span class="item-name">Napalm</span>
+                                    <span class="item-desc">Yanma hasarı</span>
+                                </div>
+                                <span class="item-price">💰 200</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Upgrades Section -->
+                    <div class="market-section">
+                        <h3>⬆️ Yükseltmeler</h3>
+                        <div class="market-items">
+                            <div class="market-item" data-type="upgrade" data-id="armor">
+                                <span class="item-icon">🛡️</span>
+                                <div class="item-info">
+                                    <span class="item-name">Armor +10</span>
+                                    <span class="item-desc">Hasar azaltma</span>
+                                </div>
+                                <span class="item-price">💰 50</span>
+                            </div>
+                            <div class="market-item" data-type="upgrade" data-id="fuel">
+                                <span class="item-icon">⛽</span>
+                                <div class="item-info">
+                                    <span class="item-name">Fuel +20</span>
+                                    <span class="item-desc">Daha fazla hareket</span>
+                                </div>
+                                <span class="item-price">💰 30</span>
+                            </div>
+                            <div class="market-item" data-type="upgrade" data-id="health">
+                                <span class="item-icon">❤️</span>
+                                <div class="item-info">
+                                    <span class="item-name">Health +20</span>
+                                    <span class="item-desc">Maksimum can</span>
+                                </div>
+                                <span class="item-price">💰 75</span>
+                            </div>
+                            <div class="market-item" data-type="upgrade" data-id="shield">
+                                <span class="item-icon">🔰</span>
+                                <div class="item-info">
+                                    <span class="item-name">Shield</span>
+                                    <span class="item-desc">1 atağı blokla</span>
+                                </div>
+                                <span class="item-price">💰 100</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="ready-btn" class="btn btn-success">
+                    <span>✅ Hazırım!</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Player Eliminated Notification -->
+        <div id="elimination-notification" class="elimination-notification">
+            <span class="skull">💀</span>
+            <span id="elimination-text">Player X Patladı!</span>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen" class="overlay">
+            <div class="overlay-content victory-content">
+                <div class="victory-icon">🏆</div>
+                <h2 id="victory-text">Kazanan!</h2>
+                <p id="victory-message">Tebrikler!</p>
+                <button id="back-to-lobby-btn" class="btn btn-primary">
+                    <span>🏠 Lobiye Dön</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Error Toast -->
+        <div id="error-toast" class="error-toast">
+            <span id="error-text">Hata mesajı</span>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/network.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
