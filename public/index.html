@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,9 +8,12 @@
     <meta name="description" content="Classic turn-based tanks game with multiplayer support">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20241222210200">
 </head>
+
 <body>
     <!-- Main Container -->
     <div id="app">
@@ -41,7 +45,7 @@
                     <div class="card create-room-card">
                         <h2>🏠 Oda Oluştur</h2>
                         <input type="text" id="room-name" placeholder="Oda adı..." maxlength="20">
-                        
+
                         <div class="terrain-select">
                             <label>Harita Seç:</label>
                             <div class="terrain-options">
@@ -51,7 +55,7 @@
                                 <button class="terrain-btn" data-terrain="snow">❄️ Kar</button>
                             </div>
                         </div>
-                        
+
                         <div class="player-count-select">
                             <label>Oyuncu Sayısı:</label>
                             <div class="count-options">
@@ -60,7 +64,7 @@
                                 <button class="count-btn" data-count="4">4</button>
                             </div>
                         </div>
-                        
+
                         <button id="create-room-btn" class="btn btn-primary">
                             <span>🚀 Oda Oluştur</span>
                         </button>
@@ -86,11 +90,11 @@
                         <span id="waiting-terrain">🏜️ Çöl</span>
                         <span id="waiting-round">Round 1</span>
                     </div>
-                    
+
                     <div id="players-list" class="players-list">
                         <!-- Players will be added here -->
                     </div>
-                    
+
                     <div class="waiting-actions">
                         <button id="start-game-btn" class="btn btn-success" style="display: none;">
                             <span>▶️ Oyunu Başlat</span>
@@ -99,7 +103,7 @@
                             <span>🚪 Ayrıl</span>
                         </button>
                     </div>
-                    
+
                     <div class="waiting-message">
                         <span id="waiting-status">Oyuncular bekleniyor...</span>
                     </div>
@@ -127,7 +131,7 @@
                         <span id="fuel-text">50</span>
                     </div>
                 </div>
-                
+
                 <div class="hud-center">
                     <div id="turn-indicator" class="turn-indicator">
                         <span id="turn-text">Senin Sıran!</span>
@@ -137,7 +141,7 @@
                         <span id="wind-value">0</span>
                     </div>
                 </div>
-                
+
                 <div class="hud-right">
                     <div class="hud-item money">
                         <span class="hud-icon">💰</span>
@@ -198,7 +202,7 @@
                 <div class="market-header">
                     <span>💰 Paran: <span id="market-money">0</span></span>
                 </div>
-                
+
                 <div class="market-sections">
                     <!-- Weapons Section -->
                     <div class="market-section">
@@ -230,7 +234,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Upgrades Section -->
                     <div class="market-section">
                         <h3>⬆️ Yükseltmeler</h3>
@@ -270,7 +274,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <button id="ready-btn" class="btn btn-success">
                     <span>✅ Hazırım!</span>
                 </button>
@@ -302,9 +306,10 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="js/game.js"></script>
-    <script src="js/network.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/game.js?v=20241222210200"></script>
+    <script src="js/network.js?v=20241222210200"></script>
+    <script src="js/ui.js?v=20241222210200"></script>
+    <script src="js/main.js?v=20241222210200"></script>
 </body>
+
 </html>

@@ -82,11 +82,14 @@ class TanksGame {
     }
 
     resize() {
-        // Get available space
-        const container = this.canvas.parentElement;
-        if (!container) return;
+        // Use fixed internal resolution for crisp rendering
+        // The canvas internal size stays constant, CSS handles display scaling
 
-        // Calculate available height
+        // Set fixed canvas resolution (game world size)
+        this.canvas.width = this.gameWidth;
+        this.canvas.height = this.gameHeight;
+
+        // Calculate display size
         const statusBar = document.getElementById('status-bar');
         const gameHud = document.getElementById('game-hud');
         const weaponPanel = document.querySelector('.weapon-panel');
@@ -103,23 +106,28 @@ class TanksGame {
         // Maintain aspect ratio (2:1)
         const aspectRatio = this.gameWidth / this.gameHeight;
 
-        let canvasWidth, canvasHeight;
+        let displayWidth, displayHeight;
 
         if (availableWidth / availableHeight > aspectRatio) {
             // Height constrained
-            canvasHeight = Math.max(200, availableHeight);
-            canvasWidth = canvasHeight * aspectRatio;
+            displayHeight = Math.max(150, availableHeight);
+            displayWidth = displayHeight * aspectRatio;
         } else {
             // Width constrained
-            canvasWidth = availableWidth;
-            canvasHeight = canvasWidth / aspectRatio;
+            displayWidth = availableWidth;
+            displayHeight = displayWidth / aspectRatio;
         }
 
-        this.canvas.width = canvasWidth;
-        this.canvas.height = canvasHeight;
+        // Set CSS size for display (this scales the fixed resolution canvas)
+        this.canvas.style.width = displayWidth + 'px';
+        this.canvas.style.height = displayHeight + 'px';
 
-        this.scaleX = canvasWidth / this.gameWidth;
-        this.scaleY = canvasHeight / this.gameHeight;
+        // Scale factors are now 1:1 since canvas resolution equals game world
+        this.scaleX = 1;
+        this.scaleY = 1;
+
+        // Enable crisp pixel rendering
+        this.ctx.imageSmoothingEnabled = false;
     }
 
     // Convert game coordinates to canvas coordinates
@@ -792,17 +800,28 @@ class TanksGame {
             this.ctx.arc(this.toCanvasX(proj.x), this.toCanvasY(proj.y), projSize, 0, Math.PI * 2);
             this.ctx.fill();
 
-            // Check collision with terrain
+            // Check collision with terrain or players
             const terrainY = this.getTerrainHeight(proj.x);
             const hitTerrain = proj.y >= terrainY;
-            const outOfBounds = proj.x < 0 || proj.x > this.gameWidth || proj.y > this.gameHeight + 50;
 
-            if (hitTerrain || outOfBounds) {
+            // Out of bounds: left, right, or too far down
+            const outOfBounds = proj.x < -50 || proj.x > this.gameWidth + 50 || proj.y > this.gameHeight + 100;
+
+            // Also check if projectile went way up and is coming back down but taking too long
+            const tooHigh = proj.y < -500;
+
+            if (hitTerrain || outOfBounds || tooHigh) {
                 proj.active = false;
 
-                // Send hit to server (only for terrain hits)
-                if (hitTerrain && window.gameNetwork) {
-                    window.gameNetwork.sendProjectileHit(proj.x, terrainY, proj.weapon);
+                // Always send hit to server - for terrain hits use actual position,
+                // for out of bounds use a position that won't hit anyone
+                if (window.gameNetwork) {
+                    if (hitTerrain) {
+                        window.gameNetwork.sendProjectileHit(proj.x, terrainY, proj.weapon);
+                    } else {
+                        // Out of bounds - send miss (hit at position away from everyone)
+                        window.gameNetwork.sendProjectileHit(-1000, -1000, proj.weapon);
+                    }
                 }
 
                 this.projectiles.splice(i, 1);
