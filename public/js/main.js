@@ -108,7 +108,7 @@ function setupNetworkCallbacks() {
             game.setTerrain(data.terrain, currentRoom.terrain);
             game.setPlayers(data.players);
             game.currentTurn = data.currentTurn;
-            game.wind = data.wind;
+
             game.round = data.round;
         }
 
@@ -209,7 +209,7 @@ function setupNetworkCallbacks() {
     network.onTurnChanged = (data) => {
         if (game) {
             game.currentTurn = data.currentTurn;
-            game.wind = data.wind;
+
         }
 
         // Update current player's fuel
@@ -225,7 +225,7 @@ function setupNetworkCallbacks() {
         isMyTurn = data.playerId === network.playerId;
 
         // Update UI
-        ui.updateTurn(isMyTurn, data.playerName || currentPlayer?.name || 'Oyuncu', data.wind, currentRoom?.round || 1);
+        ui.updateTurn(isMyTurn, data.playerName || currentPlayer?.name || 'Oyuncu', currentRoom?.round || 1);
         ui.enableControls(isMyTurn);
 
         // Reset our fuel display if it's our turn
@@ -282,7 +282,7 @@ function startGame(data) {
     game.setTerrain(data.terrain, currentRoom.terrain);
     game.setPlayers(data.players);
     game.currentTurn = data.currentTurn;
-    game.wind = data.wind;
+
     game.round = data.round || 1;
 
     allPlayers = data.players;
@@ -311,7 +311,7 @@ function updateGameUI(data) {
     // Check if it's our turn
     isMyTurn = currentPlayer?.id === network.playerId;
 
-    ui.updateTurn(isMyTurn, currentPlayer?.name || 'Oyuncu', data.wind, data.round || currentRoom?.round || 1);
+    ui.updateTurn(isMyTurn, currentPlayer?.name || 'Oyuncu', data.round || currentRoom?.round || 1);
     ui.enableControls(isMyTurn);
 
     if (myPlayer) {

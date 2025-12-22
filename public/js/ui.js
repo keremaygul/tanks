@@ -45,7 +45,7 @@ class UIManager {
         this.moneyText = document.getElementById('money-text');
         this.roundText = document.getElementById('round-text');
         this.turnText = document.getElementById('turn-text');
-        this.windValue = document.getElementById('wind-value');
+
 
         // Controls
         this.angleSlider = document.getElementById('angle-slider');
@@ -264,7 +264,7 @@ class UIManager {
         });
     }
 
-    updateTurn(isMyTurn, currentPlayerName, wind, round) {
+    updateTurn(isMyTurn, currentPlayerName, round) {
         if (isMyTurn) {
             this.turnText.textContent = '🎯 Senin Sıran!';
             this.turnText.style.color = '#f59e0b';
@@ -274,10 +274,6 @@ class UIManager {
             this.turnText.style.color = '#a0a0c0';
             this.enableControls(false);
         }
-
-        // Wind display
-        const windDirection = wind > 0 ? '→' : '←';
-        this.windValue.textContent = `${windDirection} ${Math.abs(wind).toFixed(1)}`;
 
         // Round
         this.roundText.textContent = `Round ${round}`;

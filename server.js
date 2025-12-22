@@ -149,7 +149,7 @@ function createRoom(id, name, adminId, terrain, maxPlayers) {
         currentTurn: 0,
         round: 1,
         terrainPoints: [],
-        wind: 0,
+
         width: GAME_WIDTH,
         height: GAME_HEIGHT,
         turnTimeout: null
@@ -176,7 +176,7 @@ function positionPlayers(room) {
 function startRound(room) {
     room.gameState = 'playing';
     room.terrainPoints = generateTerrain(room.terrain);
-    room.wind = (Math.random() - 0.5) * 30;
+
     room.currentTurn = 0;
 
     positionPlayers(room);
@@ -190,7 +190,7 @@ function startRound(room) {
         terrain: room.terrainPoints,
         players: room.players,
         currentTurn: room.currentTurn,
-        wind: room.wind,
+
         round: room.round
     });
 
@@ -243,15 +243,13 @@ function nextTurn(room) {
     // Reset fuel for next player
     room.players[nextIndex].fuel = room.players[nextIndex].maxFuel;
 
-    // Randomize wind slightly
-    room.wind += (Math.random() - 0.5) * 10;
-    room.wind = Math.max(-20, Math.min(20, room.wind));
+
 
     io.to(room.id).emit('turnChanged', {
         currentTurn: room.currentTurn,
         playerId: room.players[room.currentTurn].id,
         playerName: room.players[room.currentTurn].name,
-        wind: room.wind
+
     });
 
     startTurnTimer(room);
@@ -359,7 +357,7 @@ io.on('connection', (socket) => {
 
         // Generate terrain and position players
         room.terrainPoints = generateTerrain(room.terrain);
-        room.wind = (Math.random() - 0.5) * 30;
+
         room.gameState = 'playing';
         room.currentTurn = 0;
 
@@ -369,7 +367,7 @@ io.on('connection', (socket) => {
             terrain: room.terrainPoints,
             players: room.players,
             currentTurn: room.currentTurn,
-            wind: room.wind,
+
             round: room.round
         });
 
@@ -474,8 +472,7 @@ io.on('connection', (socket) => {
             startY: player.y,
             angle: angleRad,
             velocity,
-            weapon: player.currentWeapon,
-            wind: room.wind
+            weapon: player.currentWeapon
         });
 
         // Reset to normal weapon if out of ammo

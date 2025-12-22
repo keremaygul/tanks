@@ -26,7 +26,7 @@ class TanksGame {
 
         this.currentTurn = 0;
         this.myPlayerId = null;
-        this.wind = 0;
+
         this.terrainType = 'desert';
         this.round = 1;
 
@@ -274,7 +274,7 @@ class TanksGame {
     }
 
     fireProjectile(data) {
-        const { startX, startY, angle, velocity, weapon, wind } = data;
+        const { startX, startY, angle, velocity, weapon, playerId } = data;
 
         // Server sends angle in radians: angleRad = UI_degrees * PI / 180
         // UI: 0° = left, 90° = up, 180° = right
@@ -313,6 +313,9 @@ class TanksGame {
         const spawnX = startX + tipOffsetX;
         const spawnY = startY - 18 + tipOffsetY;
 
+        // Check if this is my projectile (only I should report hits)
+        const isMyProjectile = playerId === this.myPlayerId;
+
         for (let i = 0; i < projectileCount; i++) {
             // Apply spread for triple shot
             const spreadAngle = (i - 1) * angleSpread;
@@ -328,10 +331,10 @@ class TanksGame {
                 y: spawnY,
                 vx: finalDirX * velocity,
                 vy: finalDirY * velocity,
-                wind: wind * 0.02,
                 weapon,
                 trail: [],
-                active: true
+                active: true,
+                isMyProjectile: isMyProjectile  // Only true for the player who fired
             });
         }
     }
@@ -418,7 +421,7 @@ class TanksGame {
         this.drawTanks();
         this.updateAndDrawExplosions(delta);
         this.updateAndDrawParticles(delta);
-        this.drawWindIndicator();
+
 
         this.ctx.restore();
 
@@ -752,7 +755,7 @@ class TanksGame {
             if (proj.trail.length > 25) proj.trail.shift();
 
             // Physics update
-            proj.vx += proj.wind * delta;
+
             proj.vy += this.gravity * delta;
             proj.x += proj.vx * delta;
             proj.y += proj.vy * delta;
@@ -813,9 +816,9 @@ class TanksGame {
             if (hitTerrain || outOfBounds || tooHigh) {
                 proj.active = false;
 
-                // Always send hit to server - for terrain hits use actual position,
-                // for out of bounds use a position that won't hit anyone
-                if (window.gameNetwork) {
+                // Only the player who fired should send hit to server
+                // This prevents duplicate turn changes from multiple clients
+                if (proj.isMyProjectile && window.gameNetwork) {
                     if (hitTerrain) {
                         window.gameNetwork.sendProjectileHit(proj.x, terrainY, proj.weapon);
                     } else {
@@ -932,38 +935,7 @@ class TanksGame {
         }
     }
 
-    drawWindIndicator() {
-        if (Math.abs(this.wind) < 0.1) return;
 
-        const centerX = this.toCanvasX(this.gameWidth / 2);
-        const y = this.toCanvasY(30);
-        const arrowLength = Math.abs(this.wind) * 3 * this.scaleX;
-        const direction = this.wind > 0 ? 1 : -1;
-
-        // Wind arrow
-        this.ctx.save();
-        this.ctx.translate(centerX, y);
-
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-        this.ctx.lineWidth = 2 * this.scaleX;
-        this.ctx.lineCap = 'round';
-
-        // Arrow body
-        this.ctx.beginPath();
-        this.ctx.moveTo(-arrowLength * direction, 0);
-        this.ctx.lineTo(arrowLength * direction, 0);
-        this.ctx.stroke();
-
-        // Arrow head
-        this.ctx.beginPath();
-        this.ctx.moveTo(arrowLength * direction, 0);
-        this.ctx.lineTo((arrowLength - 8) * direction, -6 * this.scaleY);
-        this.ctx.moveTo(arrowLength * direction, 0);
-        this.ctx.lineTo((arrowLength - 8) * direction, 6 * this.scaleY);
-        this.ctx.stroke();
-
-        this.ctx.restore();
-    }
 
     lightenColor(color, percent) {
         const num = parseInt(color.replace('#', ''), 16);
