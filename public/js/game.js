@@ -293,13 +293,17 @@ class TanksGame {
         const projectileCount = weapon === 'triple' ? 3 : 1;
         const angleSpread = weapon === 'triple' ? 0.15 : 0;
 
-        // Calculate barrel tip position (same formula)
-        const barrelLength = 40;
+        // Calculate barrel tip position
+        // Visual barrel: 30px body + 6px tip = 36px from turret center
+        const barrelLength = 36;
         const tipOffsetX = dirX * barrelLength;
         const tipOffsetY = dirY * barrelLength;
 
+        // Spawn at barrel tip
+        // Tank position (startX, startY) is at ground level
+        // Turret center is at y - 18 (in game units, not scaled)
         const spawnX = startX + tipOffsetX;
-        const spawnY = startY - 18 + tipOffsetY; // -18 for turret center offset
+        const spawnY = startY - 18 + tipOffsetY;
 
         for (let i = 0; i < projectileCount; i++) {
             // Apply spread for triple shot
