@@ -276,65 +276,60 @@ class TanksGame {
     fireProjectile(data) {
         const { startX, startY, angle, velocity, weapon, playerId } = data;
 
-        // Server sends angle in radians: angleRad = UI_degrees * PI / 180
-        // UI: 0° = left, 90° = up, 180° = right
-        // Convert back to UI degrees for consistency with visual barrel
-        const uiAngle = (angle * 180) / Math.PI;
+        // SIMPLE PHYSICS:
+        // angle is in radians from server: UI_degrees * PI / 180
+        // UI angle: 0° = left, 90° = up, 180° = right
+        // 
+        // We convert to standard physics angle where:
+        // - Positive X is right
+        // - Negative Y is up (canvas coordinates)
+        //
+        // UI 0° (left) = physics 180° = PI radians
+        // UI 90° (up) = physics 90° = PI/2 radians  
+        // UI 180° (right) = physics 0° = 0 radians
+        //
+        // Formula: physicsAngle = PI - uiAngleRadians
 
-        // Use EXACT same rotation formula as drawTanks barrel
-        // barrelRotation = (uiAngle - 90) * PI / 180
-        // At 0° (left): rotation = -90° = -PI/2
-        // At 90° (up): rotation = 0°
-        // At 180° (right): rotation = 90° = PI/2
-        const barrelRotation = (uiAngle - 90) * Math.PI / 180;
+        const uiAngleRad = angle; // Already in radians from server
+        const physicsAngle = Math.PI - uiAngleRad;
 
-        // Barrel points UP then rotates - same for projectile direction
-        // "Up" in barrel local space becomes the firing direction after rotation
-        // Direction vector: (sin(rotation), -cos(rotation))
-        // At 0° (left): sin(-PI/2)=-1, -cos(-PI/2)=0 → fires LEFT ✓
-        // At 90° (up): sin(0)=0, -cos(0)=-1 → fires UP ✓  
-        // At 180° (right): sin(PI/2)=1, -cos(PI/2)=0 → fires RIGHT ✓
-        const dirX = Math.sin(barrelRotation);
-        const dirY = -Math.cos(barrelRotation);
+        // Velocity components using standard physics
+        // vx = velocity * cos(angle) - positive = right
+        // vy = velocity * sin(angle) - but we negate for canvas (up = negative y)
+        const vx = Math.cos(physicsAngle) * velocity;
+        const vy = -Math.sin(physicsAngle) * velocity; // Negative because canvas Y goes down
 
-        // For triple shot, create 3 projectiles with spread
-        const projectileCount = weapon === 'triple' ? 3 : 1;
-        const angleSpread = weapon === 'triple' ? 0.15 : 0;
-
-        // Calculate barrel tip position
-        // Visual barrel: 30px body + 6px tip = 36px from turret center
+        // Calculate barrel tip position for spawn
+        // Barrel visual: 36px from turret center
         const barrelLength = 36;
-        const tipOffsetX = dirX * barrelLength;
-        const tipOffsetY = dirY * barrelLength;
+        const barrelAngle = (uiAngleRad * 180 / Math.PI - 90) * Math.PI / 180;
+        const tipX = startX + Math.sin(barrelAngle) * barrelLength;
+        const tipY = startY - 18 - Math.cos(barrelAngle) * barrelLength;
 
-        // Spawn at barrel tip
-        // Tank position (startX, startY) is at ground level
-        // Turret center is at y - 18 (in game units, not scaled)
-        const spawnX = startX + tipOffsetX;
-        const spawnY = startY - 18 + tipOffsetY;
-
-        // Check if this is my projectile (only I should report hits)
+        // Check if this is my projectile
         const isMyProjectile = playerId === this.myPlayerId;
 
-        for (let i = 0; i < projectileCount; i++) {
-            // Apply spread for triple shot
-            const spreadAngle = (i - 1) * angleSpread;
-            const cosSpread = Math.cos(spreadAngle);
-            const sinSpread = Math.sin(spreadAngle);
+        // For triple shot, create spread
+        const projectileCount = weapon === 'triple' ? 3 : 1;
+        const spreadAngle = 0.1; // radians
 
-            // Rotate direction by spread
-            const finalDirX = dirX * cosSpread - dirY * sinSpread;
-            const finalDirY = dirX * sinSpread + dirY * cosSpread;
+        for (let i = 0; i < projectileCount; i++) {
+            // Calculate spread offset for triple shot
+            const spreadOffset = (i - Math.floor(projectileCount / 2)) * spreadAngle;
+            const finalAngle = physicsAngle + spreadOffset;
+
+            const finalVx = Math.cos(finalAngle) * velocity;
+            const finalVy = -Math.sin(finalAngle) * velocity;
 
             this.projectiles.push({
-                x: spawnX,
-                y: spawnY,
-                vx: finalDirX * velocity,
-                vy: finalDirY * velocity,
+                x: tipX,
+                y: tipY,
+                vx: finalVx,
+                vy: finalVy,
                 weapon,
                 trail: [],
                 active: true,
-                isMyProjectile: isMyProjectile  // Only true for the player who fired
+                isMyProjectile
             });
         }
     }

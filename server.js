@@ -510,9 +510,9 @@ io.on('connection', (socket) => {
             player.weapons[player.currentWeapon].count--;
         }
 
-        // Calculate initial velocity (power 10-100 -> velocity 12-120)
+        // Calculate initial velocity (power 10-100 -> velocity 8-80)
         const angleRad = (player.angle * Math.PI) / 180;
-        const velocity = player.power * 1.2;
+        const velocity = player.power * 0.8;
 
         io.to(room.id).emit('projectileFired', {
             playerId: socket.id,
