@@ -247,6 +247,16 @@ class UIManager {
 
         this.moneyText.textContent = player.money;
 
+        // Show armor if player has any
+        const armorDisplay = document.getElementById('armor-display');
+        const armorText = document.getElementById('armor-text');
+        if (player.armor > 0) {
+            armorDisplay.style.display = 'flex';
+            armorText.textContent = player.armor;
+        } else {
+            armorDisplay.style.display = 'none';
+        }
+
         // Update weapon counts
         document.getElementById('triple-count').textContent = player.weapons?.triple?.count || 0;
         document.getElementById('atom-count').textContent = player.weapons?.atom?.count || 0;

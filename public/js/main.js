@@ -265,6 +265,29 @@ function setupNetworkCallbacks() {
         console.log('Purchase successful:', data.itemId);
     };
 
+    network.onWeaponUpdate = (data) => {
+        if (myPlayer) {
+            myPlayer.weapons = data.weapons;
+            myPlayer.currentWeapon = data.currentWeapon;
+            ui.updateHUD(myPlayer);
+
+            // Update weapon button selection
+            document.querySelectorAll('.weapon-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.weapon === data.currentWeapon) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+    };
+
+    network.onMoneyUpdate = (data) => {
+        if (myPlayer) {
+            myPlayer.money = data.money;
+            ui.updateHUD(myPlayer);
+        }
+    };
+
     network.onError = (data) => {
         ui.showError(data.message);
     };

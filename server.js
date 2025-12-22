@@ -510,9 +510,16 @@ io.on('connection', (socket) => {
             player.weapons[player.currentWeapon].count--;
         }
 
-        // Calculate initial velocity (power 10-100 -> velocity 8-80)
+        // Send weapon update to sync UI
+        socket.emit('weaponUpdate', {
+            weapons: player.weapons,
+            currentWeapon: player.currentWeapon
+        });
+
+        // Calculate initial velocity (power affects distance)
+        // Higher power = higher velocity = travels further before gravity pulls it down
         const angleRad = (player.angle * Math.PI) / 180;
-        const velocity = player.power * 0.8;
+        const velocity = 10 + (player.power * 0.7); // Min 10, Max 80 at power 100
 
         io.to(room.id).emit('projectileFired', {
             playerId: socket.id,
@@ -523,9 +530,13 @@ io.on('connection', (socket) => {
             weapon: player.currentWeapon
         });
 
-        // Reset to normal weapon if out of ammo
+        // Reset to normal weapon if out of ammo and send update
         if (player.weapons[player.currentWeapon].count === 0) {
             player.currentWeapon = 'normal';
+            socket.emit('weaponUpdate', {
+                weapons: player.weapons,
+                currentWeapon: player.currentWeapon
+            });
         }
     });
 
@@ -582,6 +593,13 @@ io.on('connection', (socket) => {
                 });
             }
         });
+
+        // Award money for hits (25 gold per hit)
+        if (hits.length > 0) {
+            const totalReward = hits.length * 25;
+            player.money += totalReward;
+            socket.emit('moneyUpdate', { money: player.money });
+        }
 
         // Send explosion event
         io.to(room.id).emit('explosion', {

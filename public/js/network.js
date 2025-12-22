@@ -125,6 +125,14 @@ class NetworkManager {
             if (this.onPurchaseSuccess) this.onPurchaseSuccess(data);
         });
 
+        this.socket.on('weaponUpdate', (data) => {
+            if (this.onWeaponUpdate) this.onWeaponUpdate(data);
+        });
+
+        this.socket.on('moneyUpdate', (data) => {
+            if (this.onMoneyUpdate) this.onMoneyUpdate(data);
+        });
+
         this.socket.on('error', (data) => {
             if (this.onError) this.onError(data);
         });

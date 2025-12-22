@@ -679,16 +679,17 @@ input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 6px;
+    height: 12px;
     background: rgba(0, 0, 0, 0.4);
-    border-radius: 3px;
+    border-radius: 6px;
     outline: none;
+    touch-action: pan-x;
 }
 
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
     background: var(--gradient-primary);
     border-radius: 50%;
     cursor: pointer;
@@ -696,8 +697,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 input[type="range"]::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
     background: var(--gradient-primary);
     border-radius: 50%;
     cursor: pointer;
