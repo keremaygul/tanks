@@ -156,14 +156,55 @@ function createRoom(id, name, adminId, terrain, maxPlayers) {
     };
 }
 
-// Position players on terrain
+// Position players on terrain with random spacing
 function positionPlayers(room) {
     const playerCount = room.players.length;
-    const margin = 100; // Keep players away from edges
-    const spacing = (GAME_WIDTH - margin * 2) / (playerCount + 1);
+    const margin = 120; // Keep players away from edges
+    const minSpacing = 200; // Minimum distance between players
+    const availableWidth = GAME_WIDTH - margin * 2;
 
+    // Generate random positions with minimum spacing
+    const positions = [];
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    while (positions.length < playerCount && attempts < maxAttempts) {
+        // Random position within available area
+        const x = margin + Math.random() * availableWidth;
+
+        // Check if this position is far enough from all existing positions
+        let validPosition = true;
+        for (const existingX of positions) {
+            if (Math.abs(x - existingX) < minSpacing) {
+                validPosition = false;
+                break;
+            }
+        }
+
+        if (validPosition) {
+            positions.push(x);
+        }
+        attempts++;
+    }
+
+    // If we couldn't find enough random positions, fall back to even spacing
+    if (positions.length < playerCount) {
+        positions.length = 0;
+        const spacing = availableWidth / (playerCount + 1);
+        for (let i = 0; i < playerCount; i++) {
+            positions.push(margin + spacing * (i + 1));
+        }
+    }
+
+    // Shuffle positions so players don't always get same side
+    for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+
+    // Assign positions to players
     room.players.forEach((player, index) => {
-        player.x = margin + spacing * (index + 1);
+        player.x = positions[index];
         player.y = getTerrainHeightAt(room.terrainPoints, player.x);
         player.isAlive = true;
         player.fuel = player.maxFuel;
@@ -172,9 +213,16 @@ function positionPlayers(room) {
     });
 }
 
+// Available terrains for cycling
+const TERRAIN_ORDER = ['desert', 'jungle', 'mountain', 'snow'];
+
 // Start a new round
 function startRound(room) {
     room.gameState = 'playing';
+
+    // Cycle to next terrain each round
+    const terrainIndex = (room.round - 1) % TERRAIN_ORDER.length;
+    room.terrain = TERRAIN_ORDER[terrainIndex];
     room.terrainPoints = generateTerrain(room.terrain);
 
     room.currentTurn = 0;
@@ -188,9 +236,9 @@ function startRound(room) {
 
     io.to(room.id).emit('roundStarted', {
         terrain: room.terrainPoints,
+        terrainType: room.terrain,
         players: room.players,
         currentTurn: room.currentTurn,
-
         round: room.round
     });
 
@@ -462,9 +510,9 @@ io.on('connection', (socket) => {
             player.weapons[player.currentWeapon].count--;
         }
 
-        // Calculate initial velocity
+        // Calculate initial velocity (power 10-100 -> velocity 12-120)
         const angleRad = (player.angle * Math.PI) / 180;
-        const velocity = player.power * 0.6;
+        const velocity = player.power * 1.2;
 
         io.to(room.id).emit('projectileFired', {
             playerId: socket.id,

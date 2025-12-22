@@ -101,14 +101,14 @@ function setupNetworkCallbacks() {
         // Update room state
         if (currentRoom) {
             currentRoom.round = data.round;
+            currentRoom.terrain = data.terrainType || currentRoom.terrain;
         }
 
         // Reinitialize game state
         if (game) {
-            game.setTerrain(data.terrain, currentRoom.terrain);
+            game.setTerrain(data.terrain, data.terrainType || currentRoom.terrain);
             game.setPlayers(data.players);
             game.currentTurn = data.currentTurn;
-
             game.round = data.round;
         }
 
@@ -119,7 +119,7 @@ function setupNetworkCallbacks() {
         // Update UI
         updateGameUI(data);
 
-        console.log('Round started:', data.round);
+        console.log('Round started:', data.round, 'Terrain:', data.terrainType);
     };
 
     network.onPlayerMoved = (data) => {
