@@ -276,29 +276,34 @@ class TanksGame {
     fireProjectile(data) {
         const { startX, startY, angle, velocity, weapon, playerId } = data;
 
-        // startX, startY are the tank's ground position in GAME coordinates
-        // Turret center is at (startX, startY - 18)
-        // Barrel extends 36 units from turret center
+        // ===========================================
+        // CRITICAL: Must match drawTanks EXACTLY
+        // ===========================================
 
-        // Convert server's radians to UI degrees
+        // 1. Get terrain angle (tank tilts with terrain)
+        const leftHeight = this.getTerrainHeight(startX - 15);
+        const rightHeight = this.getTerrainHeight(startX + 15);
+        const terrainAngle = Math.atan2(rightHeight - leftHeight, 30);
+
+        // 2. Barrel rotation from player's angle setting
         const uiAngleDegrees = (angle * 180) / Math.PI;
         const clampedAngle = Math.max(0, Math.min(180, uiAngleDegrees));
-
-        // Barrel rotation (same formula as drawTanks)
-        // 0° = left (-PI/2), 90° = up (0), 180° = right (PI/2)
         const barrelRotation = (clampedAngle - 90) * Math.PI / 180;
 
-        // Barrel direction vector (pointing from turret center toward tip)
-        // Canvas: up = -Y when rotation is 0
-        // sin(rotation) gives X component, -cos(rotation) gives Y component
-        const dirX = Math.sin(barrelRotation);
-        const dirY = -Math.cos(barrelRotation);  // Negative because up is -Y in canvas
+        // 3. TOTAL rotation = terrain tilt + barrel rotation
+        const totalRotation = terrainAngle + barrelRotation;
 
-        // Turret center position
-        const turretX = startX;
-        const turretY = startY - 18;  // 18 units above ground
+        // 4. Direction the barrel actually points (after both rotations)
+        const dirX = Math.sin(totalRotation);
+        const dirY = -Math.cos(totalRotation);
 
-        // Barrel tip position (36 units from turret center in direction barrel points)
+        // 5. Turret center position (18 units above ground, tilted with terrain)
+        const turretOffsetX = Math.sin(terrainAngle) * 18;
+        const turretOffsetY = -Math.cos(terrainAngle) * 18;
+        const turretX = startX + turretOffsetX;
+        const turretY = startY + turretOffsetY;
+
+        // 6. Barrel tip (36 units from turret in barrel direction)
         const barrelLength = 36;
         const tipX = turretX + dirX * barrelLength;
         const tipY = turretY + dirY * barrelLength;
@@ -308,13 +313,12 @@ class TanksGame {
 
         // For triple shot, create spread
         const projectileCount = weapon === 'triple' ? 3 : 1;
-        const spreadAngle = 0.12; // radians
+        const spreadAngle = 0.12;
 
         for (let i = 0; i < projectileCount; i++) {
             const spreadOffset = (i - Math.floor(projectileCount / 2)) * spreadAngle;
-            const finalRotation = barrelRotation + spreadOffset;
+            const finalRotation = totalRotation + spreadOffset;
 
-            // Velocity in the direction barrel points
             const vx = Math.sin(finalRotation) * velocity;
             const vy = -Math.cos(finalRotation) * velocity;
 
