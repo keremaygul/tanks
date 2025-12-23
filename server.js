@@ -517,9 +517,9 @@ io.on('connection', (socket) => {
         });
 
         // Calculate initial velocity (power affects distance)
-        // Higher power = higher velocity = travels further before gravity pulls it down
+        // Lower values for better balance: power 50 = velocity 25, power 100 = velocity 45
         const angleRad = (player.angle * Math.PI) / 180;
-        const velocity = 10 + (player.power * 0.7); // Min 10, Max 80 at power 100
+        const velocity = 5 + (player.power * 0.4);
 
         io.to(room.id).emit('projectileFired', {
             playerId: socket.id,
