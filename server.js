@@ -598,9 +598,9 @@ io.on('connection', (socket) => {
             }
         });
 
-        // Award money for hits (25 gold per hit)
+        // Award money for hits (50 gold per hit)
         if (hits.length > 0) {
-            const totalReward = hits.length * 25;
+            const totalReward = hits.length * 50;
             player.money += totalReward;
             socket.emit('moneyUpdate', { money: player.money });
         }
