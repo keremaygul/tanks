@@ -103,63 +103,117 @@ class TanksGame {
             this.audioContext.resume();
         }
 
-        const oscillator = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-
         const now = this.audioContext.currentTime;
 
         switch (type) {
-            case 'fire':
-                oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(150, now);
-                oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.2);
-                gainNode.gain.setValueAtTime(0.3, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                oscillator.start(now);
-                oscillator.stop(now + 0.3);
-                break;
+            case 'fire': {
+                // Punch/boom sound for firing
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
 
-            case 'explosion':
-                oscillator.type = 'square';
-                oscillator.frequency.setValueAtTime(100, now);
-                oscillator.frequency.exponentialRampToValueAtTime(20, now + 0.4);
-                gainNode.gain.setValueAtTime(0.4, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                oscillator.start(now);
-                oscillator.stop(now + 0.5);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(60, now + 0.15);
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
                 break;
+            }
 
-            case 'hit':
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(800, now);
-                oscillator.frequency.exponentialRampToValueAtTime(200, now + 0.1);
-                gainNode.gain.setValueAtTime(0.2, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                oscillator.start(now);
-                oscillator.stop(now + 0.15);
-                break;
+            case 'explosion': {
+                // Multi-layered explosion with noise
+                // Low boom
+                const bass = this.audioContext.createOscillator();
+                const bassGain = this.audioContext.createGain();
+                bass.connect(bassGain);
+                bassGain.connect(this.audioContext.destination);
+                bass.type = 'sine';
+                bass.frequency.setValueAtTime(80, now);
+                bass.frequency.exponentialRampToValueAtTime(20, now + 0.5);
+                bassGain.gain.setValueAtTime(0.6, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                bass.start(now);
+                bass.stop(now + 0.6);
 
-            case 'move':
-                oscillator.type = 'triangle';
-                oscillator.frequency.setValueAtTime(80, now);
-                gainNode.gain.setValueAtTime(0.1, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-                oscillator.start(now);
-                oscillator.stop(now + 0.05);
+                // Crackle
+                const crackle = this.audioContext.createOscillator();
+                const crackleGain = this.audioContext.createGain();
+                crackle.connect(crackleGain);
+                crackleGain.connect(this.audioContext.destination);
+                crackle.type = 'sawtooth';
+                crackle.frequency.setValueAtTime(300, now);
+                crackle.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                crackleGain.gain.setValueAtTime(0.3, now);
+                crackleGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                crackle.start(now);
+                crackle.stop(now + 0.4);
                 break;
+            }
 
-            case 'death':
-                oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(400, now);
-                oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.8);
-                gainNode.gain.setValueAtTime(0.3, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1);
-                oscillator.start(now);
-                oscillator.stop(now + 1);
+            case 'hit': {
+                // Impact sound
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                osc.start(now);
+                osc.stop(now + 0.12);
                 break;
+            }
+
+            case 'move': {
+                // Tank tracks sound
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(60, now);
+                osc.frequency.setValueAtTime(70, now + 0.03);
+                osc.frequency.setValueAtTime(55, now + 0.06);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+                break;
+            }
+
+            case 'death': {
+                // Big explosion for tank death
+                const bass = this.audioContext.createOscillator();
+                const bassGain = this.audioContext.createGain();
+                bass.connect(bassGain);
+                bassGain.connect(this.audioContext.destination);
+                bass.type = 'sine';
+                bass.frequency.setValueAtTime(100, now);
+                bass.frequency.exponentialRampToValueAtTime(15, now + 0.8);
+                bassGain.gain.setValueAtTime(0.7, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+                bass.start(now);
+                bass.stop(now + 1);
+
+                // High crackle
+                const high = this.audioContext.createOscillator();
+                const highGain = this.audioContext.createGain();
+                high.connect(highGain);
+                highGain.connect(this.audioContext.destination);
+                high.type = 'sawtooth';
+                high.frequency.setValueAtTime(500, now);
+                high.frequency.exponentialRampToValueAtTime(80, now + 0.6);
+                highGain.gain.setValueAtTime(0.4, now);
+                highGain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+                high.start(now);
+                high.stop(now + 0.7);
+                break;
+            }
         }
     }
 

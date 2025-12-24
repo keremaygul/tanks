@@ -135,6 +135,8 @@ function setupNetworkCallbacks() {
         // Update game visualization
         if (game) {
             game.updatePlayer(data.playerId, { x: data.x, y: data.y });
+            // Play move sound
+            game.playSound('move');
         }
 
         // Update HUD if it's our player
@@ -205,6 +207,10 @@ function setupNetworkCallbacks() {
     network.onPlayerEliminated = (data) => {
         ui.showElimination(data.playerName);
         console.log('Player eliminated:', data.playerName);
+        // Play death sound
+        if (game) {
+            game.playSound('death');
+        }
     };
 
     network.onTurnChanged = (data) => {

@@ -649,8 +649,16 @@ io.on('connection', (socket) => {
 
         if (type === 'weapon') {
             const weapon = WEAPONS[itemId];
-            if (weapon && player.money >= weapon.price) {
+            if (!weapon) {
+                socket.emit('error', { message: 'Silah bulunamadı!' });
+                return;
+            }
+            if (player.money >= weapon.price) {
                 player.money -= weapon.price;
+                // Create weapon slot if doesn't exist
+                if (!player.weapons[itemId]) {
+                    player.weapons[itemId] = { count: 0 };
+                }
                 player.weapons[itemId].count += weapon.count === -1 ? 0 : 1;
                 socket.emit('purchaseSuccess', { type, itemId, player });
             } else {
