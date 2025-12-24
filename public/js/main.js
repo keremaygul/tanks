@@ -390,20 +390,10 @@ function setupUIEvents() {
     });
 
     // Color picker
-    const colorOptions = document.getElementById('color-options');
-    if (colorOptions) {
-        colorOptions.addEventListener('click', (e) => {
-            const colorBtn = e.target.closest('.color-option');
-            if (!colorBtn) return;
-
-            // Update selection
-            colorOptions.querySelectorAll('.color-option').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            colorBtn.classList.add('selected');
-
-            // Store selected color
-            selectedColor = colorBtn.dataset.color;
+    const tankColorInput = document.getElementById('tank-color');
+    if (tankColorInput) {
+        tankColorInput.addEventListener('input', (e) => {
+            selectedColor = e.target.value;
         });
     }
 
