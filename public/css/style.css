@@ -186,6 +186,55 @@ body {
     padding-bottom: 20px;
 }
 
+/* Color Picker */
+.color-picker {
+    margin-top: 12px;
+}
+
+.color-picker label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.color-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.color-option {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+}
+
+.color-option.selected {
+    border-color: white;
+    box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+/* Version Info */
+.version-info {
+    text-align: center;
+    padding: 12px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.version-info .separator {
+    margin: 0 8px;
+}
+
 /* Cards */
 .card {
     background: var(--bg-card);

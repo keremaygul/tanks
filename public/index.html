@@ -11,7 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=20241223012200">
+    <link rel="stylesheet" href="css/style.css?v=20241224194500">
 </head>
 
 <body>
@@ -35,8 +35,22 @@
             <div class="lobby-container">
                 <!-- Player Name Input -->
                 <div class="card player-card">
-                    <h2>👤 Oyuncu Adı</h2>
+                    <h2>👤 Oyuncu</h2>
                     <input type="text" id="player-name" placeholder="Adını gir..." maxlength="15">
+                    <div class="color-picker">
+                        <label>Tank Rengi:</label>
+                        <div class="color-options" id="color-options">
+                            <button class="color-option selected" data-color="#ef4444"
+                                style="background: #ef4444;"></button>
+                            <button class="color-option" data-color="#3b82f6" style="background: #3b82f6;"></button>
+                            <button class="color-option" data-color="#22c55e" style="background: #22c55e;"></button>
+                            <button class="color-option" data-color="#f59e0b" style="background: #f59e0b;"></button>
+                            <button class="color-option" data-color="#a855f7" style="background: #a855f7;"></button>
+                            <button class="color-option" data-color="#ec4899" style="background: #ec4899;"></button>
+                            <button class="color-option" data-color="#06b6d4" style="background: #06b6d4;"></button>
+                            <button class="color-option" data-color="#f97316" style="background: #f97316;"></button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Room Actions -->
@@ -77,6 +91,13 @@
                             <div class="no-rooms">Henüz oda yok...</div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Version Info -->
+                <div class="version-info">
+                    <span>v1.0.0</span>
+                    <span class="separator">•</span>
+                    <span>Created by Kerem Aygül</span>
                 </div>
             </div>
         </div>
@@ -171,9 +192,17 @@
                     <span class="weapon-icon">☢️</span>
                     <span class="weapon-count" id="atom-count">0</span>
                 </button>
-                <button class="weapon-btn" data-weapon="napalm" title="Napalm">
-                    <span class="weapon-icon">🔥</span>
-                    <span class="weapon-count" id="napalm-count">0</span>
+                <button class="weapon-btn" data-weapon="splash" title="Splash Bomb">
+                    <span class="weapon-icon">💥</span>
+                    <span class="weapon-count" id="splash-count">0</span>
+                </button>
+                <button class="weapon-btn" data-weapon="sniper" title="Sniper Shot">
+                    <span class="weapon-icon">🎯</span>
+                    <span class="weapon-count" id="sniper-count">0</span>
+                </button>
+                <button class="weapon-btn" data-weapon="cluster" title="Cluster Bomb">
+                    <span class="weapon-icon">🧨</span>
+                    <span class="weapon-count" id="cluster-count">0</span>
                 </button>
             </div>
 
@@ -306,10 +335,10 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="js/game.js?v=20241223012200"></script>
-    <script src="js/network.js?v=20241223012200"></script>
-    <script src="js/ui.js?v=20241223012200"></script>
-    <script src="js/main.js?v=20241223012200"></script>
+    <script src="js/game.js?v=20241224194500"></script>
+    <script src="js/network.js?v=20241224194500"></script>
+    <script src="js/ui.js?v=20241224194500"></script>
+    <script src="js/main.js?v=20241224194500"></script>
 </body>
 
 </html>

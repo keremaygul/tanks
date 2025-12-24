@@ -260,7 +260,9 @@ class UIManager {
         // Update weapon counts
         document.getElementById('triple-count').textContent = player.weapons?.triple?.count || 0;
         document.getElementById('atom-count').textContent = player.weapons?.atom?.count || 0;
-        document.getElementById('napalm-count').textContent = player.weapons?.napalm?.count || 0;
+        document.getElementById('splash-count').textContent = player.weapons?.splash?.count || 0;
+        document.getElementById('sniper-count').textContent = player.weapons?.sniper?.count || 0;
+        document.getElementById('cluster-count').textContent = player.weapons?.cluster?.count || 0;
 
         // Enable/disable weapon buttons
         document.querySelectorAll('.weapon-btn').forEach(btn => {

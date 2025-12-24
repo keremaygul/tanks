@@ -72,6 +72,11 @@ class TanksGame {
             }
         };
 
+        // Sound system
+        this.soundEnabled = true;
+        this.audioContext = null;
+        this.initAudio();
+
         // Bind methods
         this.render = this.render.bind(this);
         this.resize = this.resize.bind(this);
@@ -79,6 +84,88 @@ class TanksGame {
         // Setup
         window.addEventListener('resize', this.resize);
         this.resize();
+    }
+
+    initAudio() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.warn('Web Audio API not supported');
+            this.soundEnabled = false;
+        }
+    }
+
+    playSound(type) {
+        if (!this.soundEnabled || !this.audioContext) return;
+
+        // Resume audio context if suspended (mobile requirement)
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+
+        const now = this.audioContext.currentTime;
+
+        switch (type) {
+            case 'fire':
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(150, now);
+                oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                oscillator.start(now);
+                oscillator.stop(now + 0.3);
+                break;
+
+            case 'explosion':
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(100, now);
+                oscillator.frequency.exponentialRampToValueAtTime(20, now + 0.4);
+                gainNode.gain.setValueAtTime(0.4, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                oscillator.start(now);
+                oscillator.stop(now + 0.5);
+                break;
+
+            case 'hit':
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, now);
+                oscillator.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                oscillator.start(now);
+                oscillator.stop(now + 0.15);
+                break;
+
+            case 'move':
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(80, now);
+                gainNode.gain.setValueAtTime(0.1, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                oscillator.start(now);
+                oscillator.stop(now + 0.05);
+                break;
+
+            case 'death':
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(400, now);
+                oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.8);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1);
+                oscillator.start(now);
+                oscillator.stop(now + 1);
+                break;
+        }
+    }
+
+    toggleSound() {
+        this.soundEnabled = !this.soundEnabled;
+        return this.soundEnabled;
     }
 
     resize() {
@@ -276,9 +363,12 @@ class TanksGame {
     fireProjectile(data) {
         const { startX, startY, angle, velocity, weapon, playerId } = data;
 
+        // Play fire sound
+        this.playSound('fire');
+
         // ===========================================
         // CRITICAL: Must match drawTanks EXACTLY
-        // ===========================================
+        // =========================================== 
 
         // 1. Get terrain angle (tank tilts with terrain)
         const leftHeight = this.getTerrainHeight(startX - 15);
@@ -336,6 +426,9 @@ class TanksGame {
     }
 
     createExplosion(x, y, radius, weapon) {
+        // Play explosion sound
+        this.playSound('explosion');
+
         this.explosions.push({
             x,
             y,

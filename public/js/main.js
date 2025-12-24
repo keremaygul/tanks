@@ -13,6 +13,7 @@ let myPlayer = null;
 let currentRoom = null;
 let allPlayers = [];
 let isMyTurn = false;
+let selectedColor = '#ef4444'; // Default tank color
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -359,7 +360,7 @@ function setupUIEvents() {
             return;
         }
 
-        network.createRoom(roomName, playerName, ui.selectedTerrain, ui.selectedMaxPlayers);
+        network.createRoom(roomName, playerName, ui.selectedTerrain, ui.selectedMaxPlayers, selectedColor);
     });
 
     // Room list click (join room)
@@ -375,7 +376,7 @@ function setupUIEvents() {
             return;
         }
 
-        network.joinRoom(roomId, playerName);
+        network.joinRoom(roomId, playerName, selectedColor);
     });
 
     // Start game button
@@ -387,6 +388,24 @@ function setupUIEvents() {
     ui.leaveRoomBtn.addEventListener('click', () => {
         leaveGame();
     });
+
+    // Color picker
+    const colorOptions = document.getElementById('color-options');
+    if (colorOptions) {
+        colorOptions.addEventListener('click', (e) => {
+            const colorBtn = e.target.closest('.color-option');
+            if (!colorBtn) return;
+
+            // Update selection
+            colorOptions.querySelectorAll('.color-option').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            colorBtn.classList.add('selected');
+
+            // Store selected color
+            selectedColor = colorBtn.dataset.color;
+        });
+    }
 
     // Movement buttons with touch hold support
     let moveInterval = null;

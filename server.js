@@ -28,15 +28,17 @@ const WEAPONS = {
     normal: { name: 'Normal Shot', price: 0, damage: 25, radius: 35, count: -1 },
     triple: { name: 'Triple Shot', price: 100, damage: 18, radius: 28, count: 3 },
     atom: { name: 'Atom Bomb', price: 300, damage: 75, radius: 120, count: 1 },
-    napalm: { name: 'Napalm', price: 200, damage: 40, radius: 70, count: 2 }
+    splash: { name: 'Splash Bomb', price: 150, damage: 30, radius: 80, count: 2 },
+    sniper: { name: 'Sniper Shot', price: 120, damage: 50, radius: 20, count: 2 },
+    cluster: { name: 'Cluster Bomb', price: 250, damage: 20, radius: 40, count: 2, splits: 5 }
 };
 
-// Upgrade definitions
+// Upgrade definitions (with caps)
 const UPGRADES = {
-    armor: { name: 'Armor +10', price: 50, stat: 'armor', value: 10 },
-    fuel: { name: 'Fuel +25', price: 30, stat: 'maxFuel', value: 25 },
-    health: { name: 'Health +25', price: 75, stat: 'maxHealth', value: 25 },
-    shield: { name: 'Shield', price: 100, stat: 'shield', value: 1 }
+    armor: { name: 'Armor +10', price: 50, stat: 'armor', value: 10, maxCap: 50 },
+    fuel: { name: 'Fuel +25', price: 30, stat: 'maxFuel', value: 25, maxCap: 150 },
+    health: { name: 'Health +25', price: 75, stat: 'maxHealth', value: 25, maxCap: 150 },
+    shield: { name: 'Shield', price: 100, stat: 'shield', value: 1, maxCap: 1 }
 };
 
 // Generate terrain points
@@ -107,7 +109,7 @@ function getTerrainHeightAt(points, x) {
 const PLAYER_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b'];
 
 // Create new player
-function createPlayer(id, name, roomId, colorIndex) {
+function createPlayer(id, name, roomId, colorIndex, customColor = null) {
     return {
         id,
         name,
@@ -127,12 +129,14 @@ function createPlayer(id, name, roomId, colorIndex) {
             normal: { count: -1 },
             triple: { count: 0 },
             atom: { count: 0 },
-            napalm: { count: 0 }
+            splash: { count: 0 },
+            sniper: { count: 0 },
+            cluster: { count: 0 }
         },
         currentWeapon: 'normal',
         isAlive: true,
         ready: false,
-        color: PLAYER_COLORS[colorIndex % PLAYER_COLORS.length]
+        color: customColor || PLAYER_COLORS[colorIndex % PLAYER_COLORS.length]
     };
 }
 
@@ -336,14 +340,14 @@ io.on('connection', (socket) => {
 
     // Create room
     socket.on('createRoom', (data) => {
-        const { roomName, playerName, terrain, maxPlayers } = data;
+        const { roomName, playerName, terrain, maxPlayers, color } = data;
         const roomId = 'room_' + Date.now();
 
         const room = createRoom(roomId, roomName, socket.id, terrain, maxPlayers);
         room.terrainPoints = generateTerrain(terrain);
         rooms.set(roomId, room);
 
-        const player = createPlayer(socket.id, playerName, roomId, 0);
+        const player = createPlayer(socket.id, playerName, roomId, 0, color);
         player.x = GAME_WIDTH / 2;
         player.y = getTerrainHeightAt(room.terrainPoints, player.x);
 
@@ -358,7 +362,7 @@ io.on('connection', (socket) => {
 
     // Join room
     socket.on('joinRoom', (data) => {
-        const { roomId, playerName } = data;
+        const { roomId, playerName, color } = data;
         const room = rooms.get(roomId);
 
         if (!room) {
@@ -376,7 +380,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        const player = createPlayer(socket.id, playerName, roomId, room.players.length);
+        const player = createPlayer(socket.id, playerName, roomId, room.players.length, color);
         player.x = GAME_WIDTH / 2;
         player.y = getTerrainHeightAt(room.terrainPoints, player.x);
 
@@ -655,8 +659,15 @@ io.on('connection', (socket) => {
         } else if (type === 'upgrade') {
             const upgrade = UPGRADES[itemId];
             if (upgrade && player.money >= upgrade.price) {
+                // Check if already at max cap
+                const currentValue = player[upgrade.stat] || 0;
+                if (upgrade.maxCap && currentValue >= upgrade.maxCap) {
+                    socket.emit('error', { message: 'Maksimum seviyeye ulaştın!' });
+                    return;
+                }
+
                 player.money -= upgrade.price;
-                player[upgrade.stat] = (player[upgrade.stat] || 0) + upgrade.value;
+                player[upgrade.stat] = Math.min(currentValue + upgrade.value, upgrade.maxCap || Infinity);
                 socket.emit('purchaseSuccess', { type, itemId, player });
             } else {
                 socket.emit('error', { message: 'Yetersiz para!' });

@@ -138,14 +138,14 @@ class NetworkManager {
         });
     }
 
-    createRoom(roomName, playerName, terrain, maxPlayers) {
+    createRoom(roomName, playerName, terrain, maxPlayers, color) {
         if (!this.connected) return;
-        this.socket.emit('createRoom', { roomName, playerName, terrain, maxPlayers });
+        this.socket.emit('createRoom', { roomName, playerName, terrain, maxPlayers, color });
     }
 
-    joinRoom(roomId, playerName) {
+    joinRoom(roomId, playerName, color) {
         if (!this.connected) return;
-        this.socket.emit('joinRoom', { roomId, playerName });
+        this.socket.emit('joinRoom', { roomId, playerName, color });
     }
 
     leaveRoom() {
