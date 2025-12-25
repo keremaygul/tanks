@@ -52,6 +52,10 @@ function setupNetworkCallbacks() {
         ui.updateServerStatus(data.online, data.playerCount);
     };
 
+    network.onChatMessage = (data) => {
+        ui.addChatMessage(data.sender, data.message, data.isEmoji);
+    };
+
     network.onRoomList = (rooms) => {
         ui.updateRoomList(rooms);
     };

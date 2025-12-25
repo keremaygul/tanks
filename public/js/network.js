@@ -19,6 +19,8 @@ class NetworkManager {
         this.onRoomJoined = null;
         this.onPlayerJoined = null;
         this.onPlayerLeft = null;
+        this.onChatMessage = null; // New
+        this.onSessionExpired = null; // New
         this.onGameStarted = null;
         this.onPlayerMoved = null;
         this.onPlayerAimed = null;
@@ -41,6 +43,13 @@ class NetworkManager {
             console.log('Connected to server');
             this.connected = true;
             this.playerId = this.socket.id;
+
+            // Reconnect attempt
+            const token = localStorage.getItem('tanks_session_token');
+            if (token) {
+                this.socket.emit('reconnect', token);
+            }
+
             if (this.onConnect) this.onConnect();
         });
 
@@ -61,12 +70,14 @@ class NetworkManager {
         this.socket.on('roomCreated', (data) => {
             this.roomId = data.room.id;
             this.isAdmin = true;
+            if (data.token) localStorage.setItem('tanks_session_token', data.token);
             if (this.onRoomCreated) this.onRoomCreated(data);
         });
 
         this.socket.on('roomJoined', (data) => {
             this.roomId = data.room.id;
             this.isAdmin = false;
+            if (data.token) localStorage.setItem('tanks_session_token', data.token);
             if (this.onRoomJoined) this.onRoomJoined(data);
         });
 

@@ -74,7 +74,36 @@ class UIManager {
         this.currentPlayer = null;
         this.currentRoom = null;
 
+        // Chat
+        this.chatMessages = document.getElementById('chat-messages');
+
         this.setupEventListeners();
+    }
+
+    addChatMessage(sender, message, isEmoji) {
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble';
+
+        let content = '';
+        if (isEmoji) {
+            content = `<div class="emoji-content">${message}</div>`;
+        } else {
+            content = `<div class="text-content">${this.escapeHtml(message)}</div>`;
+        }
+
+        bubble.innerHTML = `
+            <div class="sender">${this.escapeHtml(sender)}</div>
+            ${content}
+        `;
+
+        this.chatMessages.appendChild(bubble);
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+
+        // Remove after 5 seconds
+        setTimeout(() => {
+            bubble.style.opacity = '0';
+            setTimeout(() => bubble.remove(), 500);
+        }, 5000);
     }
 
     setupEventListeners() {
@@ -118,6 +147,16 @@ class UIManager {
         document.querySelectorAll('.market-item').forEach(item => {
             item.addEventListener('click', () => {
                 // Handled in main.js
+            });
+        });
+
+        // Chat Emojis
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const emoji = btn.dataset.emoji;
+                if (window.gameNetwork) {
+                    window.gameNetwork.sendChat(emoji, true);
+                }
             });
         });
     }

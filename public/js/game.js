@@ -455,7 +455,11 @@ class TanksGame {
         // Check if this is my projectile
         const isMyProjectile = playerId === this.myPlayerId;
 
-        // For triple shot, create spread
+        // For valid visuals, we still spawn the projectile 
+        // But we won't calculate hits locally. We just animate it.
+        // It will fly until it hits something or time out.
+        // The server sends 'explosion' event which wraps up the projectile.
+
         const projectileCount = weapon === 'triple' ? 3 : 1;
         const spreadAngle = 0.12;
 
@@ -478,6 +482,63 @@ class TanksGame {
             });
         }
     }
+
+    updateAndDrawProjectiles(delta) {
+        // Just update physics for visual flight
+        // Do NOT check for collisions here to generate events.
+        // Collision events come from server.
+
+        this.ctx.lineWidth = 2 * this.scaleX;
+
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const p = this.projectiles[i];
+
+            p.x += p.vx * delta;
+            p.y += p.vy * delta;
+            p.vy += this.gravity * delta; // Gravity
+
+            // Trail
+            p.trail.push({ x: p.x, y: p.y });
+            if (p.trail.length > 20) p.trail.shift();
+
+            // Draw trail
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = this.getWeaponColor(p.weapon);
+            if (p.trail.length > 0) {
+                this.ctx.moveTo(this.toCanvasX(p.trail[0].x), this.toCanvasY(p.trail[0].y));
+                for (let t of p.trail) {
+                    this.ctx.lineTo(this.toCanvasX(t.x), this.toCanvasY(t.y));
+                }
+            }
+            this.ctx.stroke();
+
+            // Draw projectile head
+            this.ctx.fillStyle = this.getWeaponColor(p.weapon);
+            this.ctx.beginPath();
+            this.ctx.arc(this.toCanvasX(p.x), this.toCanvasY(p.y), 3 * this.scaleX, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Remove if way out of bounds
+            if (p.y > this.gameHeight + 100 || p.x < -100 || p.x > this.gameWidth + 100) {
+                this.projectiles.splice(i, 1);
+            }
+        }
+    }
+
+    getWeaponColor(weapon) {
+        switch (weapon) {
+            case 'atom': return '#ff0000';
+            case 'plasma': return '#00ffff';
+            default: return '#ffffff';
+        }
+    }
+
+    // Helper needed for colors
+    lightenColor(color, percent) { return color; } // Stub if missing
+    darkenColor(color, percent) { return color; } // Stub if missing
+
+    /* REMOVED LOCAL EXPLOSION LOGIC FROM UPDATE LOOP */
+
 
     createExplosion(x, y, radius, weapon) {
         // Play explosion sound
